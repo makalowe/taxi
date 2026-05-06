@@ -1,25 +1,6 @@
-# Sprint Current
+# Sprint en cours — Taxi
 
-## Periode
-- Debut:
-- Fin:
-
-## Objectif sprint
-
-## Top 3 priorites
-1.
-2.
-3.
-
-## Definition of Done
-- [ ]
-- [ ]
-- [ ]
-
-## Risques / blocages
-- 
-
-## Prochaines actions (48h)
-1.
-2.
-3.
+## Priorites
+1. Creer backend Node.js API
+2. Developper dashboard manager React
+3. Apps mobile React Native

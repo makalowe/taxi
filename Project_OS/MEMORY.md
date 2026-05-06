@@ -1,29 +1,4 @@
-# MEMORY - Taxi
+# Memoire du projet — Taxi
 
-Memoire locale du projet `Taxi`.
-
-## Identite du projet
-
-- Nom: Taxi
-- Type: a definir.
-- Statut: a structurer.
-
-## Ce qu'il faut retenir
-
-- Ce projet fait partie des projets a piloter avec un `Project_OS` local.
-
-## Objectif actuel
-
-- Clarifier la mission, le public cible et le premier livrable exploitable.
-
-## A clarifier
-
-- Mission du projet.
-- Public cible.
-- Livrable principal.
-- Priorite 30 jours.
-
-## Configuration agent
-
-- Fichier: `AGENT_CONFIG.md`
-- Regle: meilleur resultat utile avec le moins de tokens possible.
+Projet cree le 2026-04-05
+Derniere mise a jour: 2026-05-06

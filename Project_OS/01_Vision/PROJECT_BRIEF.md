@@ -1,21 +1,10 @@
-# Project Brief
-
-## Nom du projet
+# Project Brief — Taxi
 
 ## Mission
+Application de reservation de taxis a Mons (3 apps : client, chauffeur, manager)
 
-## Public cible
+## Stack technique
+React Native + Node.js + PostgreSQL + Redis + Socket.io
 
-## Probleme principal a resoudre
-
-## Proposition de valeur
-
-## Objectifs 90 jours
-1.
-2.
-3.
-
-## KPI principaux
-1.
-2.
-3.
+## Etat actuel
+Pre-MVP : maquettes HTML, architecture SVG, aucun code backend
