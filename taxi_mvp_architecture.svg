@@ -1,0 +1,124 @@
+<svg width="1200" height="760" viewBox="0 0 1200 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Taxi MVP Architecture - Mons Belgium</title>
+  <desc id="desc">Architecture visuelle pour application client, app chauffeur, dashboard gestionnaire, backend temps reel, donnees et services externes.</desc>
+  <defs>
+    <style>
+      .title{font:700 26px Segoe UI,Arial,sans-serif;fill:#1f2a24}
+      .subtitle{font:400 14px Segoe UI,Arial,sans-serif;fill:#4d5a52}
+      .layer{font:700 14px Segoe UI,Arial,sans-serif;fill:#1f2a24}
+      .boxTitle{font:700 14px Segoe UI,Arial,sans-serif;fill:#1f2a24}
+      .boxTxt{font:400 12px Segoe UI,Arial,sans-serif;fill:#36423b}
+      .arrowTxt{font:600 11px Segoe UI,Arial,sans-serif;fill:#2f3a33}
+      .client{fill:#e7f5ef;stroke:#2a8a66;stroke-width:1.2}
+      .backend{fill:#ece9ff;stroke:#5f52c9;stroke-width:1.2}
+      .data{fill:#fff1dc;stroke:#b8740d;stroke-width:1.2}
+      .ext{fill:#e7f0ff;stroke:#2f6fda;stroke-width:1.2}
+      .legend{font:400 12px Segoe UI,Arial,sans-serif;fill:#36423b}
+    </style>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M1,1 L9,5 L1,9" fill="none" stroke="currentColor" stroke-width="1.4"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="760" fill="#f8f5ee"/>
+  <text x="36" y="42" class="title">Taxi MVP Architecture - Mons, Belgique</text>
+  <text x="36" y="64" class="subtitle">Apps Client + Chauffeur + Dashboard Gestionnaire, dispatch auto, suivi live, reservation immediate et planifiee</text>
+
+  <text x="36" y="102" class="layer">1) Couche Applications</text>
+  <rect x="36" y="118" rx="14" ry="14" width="1128" height="145" fill="#ffffff" stroke="#d4cebf"/>
+
+  <rect class="client" x="70" y="144" rx="12" ry="12" width="300" height="95"/>
+  <text x="90" y="169" class="boxTitle">App Client (React Native)</text>
+  <text x="90" y="188" class="boxTxt">- Commander / planifier course</text>
+  <text x="90" y="205" class="boxTxt">- Voir taxi, ETA, statut en direct</text>
+  <text x="90" y="222" class="boxTxt">- Paiement: cash/TPE (in-app optionnel)</text>
+
+  <rect class="client" x="450" y="144" rx="12" ry="12" width="300" height="95"/>
+  <text x="470" y="169" class="boxTitle">App Chauffeur (React Native)</text>
+  <text x="470" y="188" class="boxTxt">- Accepter/refuser course</text>
+  <text x="470" y="205" class="boxTxt">- Envoyer GPS live (Socket.io)</text>
+  <text x="470" y="222" class="boxTxt">- Demarrer / terminer course</text>
+
+  <rect class="client" x="830" y="144" rx="12" ry="12" width="300" height="95"/>
+  <text x="850" y="169" class="boxTitle">Dashboard Gestionnaire (React)</text>
+  <text x="850" y="188" class="boxTxt">- Vue flotte live (10 vehicules)</text>
+  <text x="850" y="205" class="boxTxt">- Override dispatch manuel</text>
+  <text x="850" y="222" class="boxTxt">- KPIs, alertes, rapports</text>
+
+  <text x="36" y="302" class="layer">2) Couche Backend (Node.js)</text>
+  <rect x="36" y="318" rx="14" ry="14" width="1128" height="205" fill="#ffffff" stroke="#d4cebf"/>
+
+  <rect class="backend" x="80" y="350" rx="12" ry="12" width="250" height="70"/>
+  <text x="98" y="374" class="boxTitle">API Gateway + Auth JWT</text>
+  <text x="98" y="392" class="boxTxt">Rate limit, RBAC, validation</text>
+
+  <rect class="backend" x="360" y="350" rx="12" ry="12" width="240" height="70"/>
+  <text x="378" y="374" class="boxTitle">Dispatch Service</text>
+  <text x="378" y="392" class="boxTxt">Affectation taxi le plus proche</text>
+
+  <rect class="backend" x="630" y="350" rx="12" ry="12" width="240" height="70"/>
+  <text x="648" y="374" class="boxTitle">Ride Service</text>
+  <text x="648" y="392" class="boxTxt">Statuts, reservation, pricing</text>
+
+  <rect class="backend" x="900" y="350" rx="12" ry="12" width="220" height="70"/>
+  <text x="918" y="374" class="boxTitle">Socket.io Hub</text>
+  <text x="918" y="392" class="boxTxt">GPS + ETA + events live</text>
+
+  <rect class="backend" x="80" y="440" rx="12" ry="12" width="250" height="60"/>
+  <text x="98" y="463" class="boxTitle">Notification Service</text>
+  <text x="98" y="481" class="boxTxt">Push FCM (accepted/arrived/done)</text>
+
+  <rect class="backend" x="360" y="440" rx="12" ry="12" width="240" height="60"/>
+  <text x="378" y="463" class="boxTitle">Pricing Service</text>
+  <text x="378" y="481" class="boxTxt">Distance + temps + regles tarifaires</text>
+
+  <rect class="backend" x="630" y="440" rx="12" ry="12" width="240" height="60"/>
+  <text x="648" y="463" class="boxTitle">Reporting Service</text>
+  <text x="648" y="481" class="boxTxt">CA, occupation, attente, exports</text>
+
+  <rect class="backend" x="900" y="440" rx="12" ry="12" width="220" height="60"/>
+  <text x="918" y="463" class="boxTitle">Admin Override</text>
+  <text x="918" y="481" class="boxTxt">Reassignation manuelle</text>
+
+  <text x="36" y="560" class="layer">3) Donnees et Services Externes</text>
+  <rect x="36" y="576" rx="14" ry="14" width="1128" height="146" fill="#ffffff" stroke="#d4cebf"/>
+
+  <rect class="data" x="80" y="606" rx="12" ry="12" width="280" height="84"/>
+  <text x="98" y="632" class="boxTitle">PostgreSQL (source of truth)</text>
+  <text x="98" y="651" class="boxTxt">users, drivers, vehicles, rides, events</text>
+  <text x="98" y="668" class="boxTxt">historique, reservations, paiements</text>
+
+  <rect class="data" x="390" y="606" rx="12" ry="12" width="220" height="84"/>
+  <text x="408" y="632" class="boxTitle">Redis</text>
+  <text x="408" y="651" class="boxTxt">presence chauffeurs</text>
+  <text x="408" y="668" class="boxTxt">positions GPS live, cache ETA</text>
+
+  <rect class="ext" x="640" y="606" rx="12" ry="12" width="240" height="84"/>
+  <text x="658" y="632" class="boxTitle">Google Maps API</text>
+  <text x="658" y="651" class="boxTxt">geocoding, routing, ETA</text>
+  <text x="658" y="668" class="boxTxt">distance matrix</text>
+
+  <rect class="ext" x="910" y="606" rx="12" ry="12" width="220" height="84"/>
+  <text x="928" y="632" class="boxTitle">Firebase FCM</text>
+  <text x="928" y="651" class="boxTxt">notifications mobiles</text>
+  <text x="928" y="668" class="boxTxt">client + chauffeur</text>
+
+  <line x1="220" y1="239" x2="205" y2="350" stroke="#2a8a66" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="600" y1="239" x2="205" y2="350" stroke="#2a8a66" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="980" y1="239" x2="205" y2="350" stroke="#2a8a66" stroke-width="1.6" marker-end="url(#arr)"/>
+  <text x="232" y="286" class="arrowTxt">HTTPS API</text>
+
+  <line x1="330" y1="385" x2="360" y2="385" stroke="#5f52c9" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="600" y1="385" x2="630" y2="385" stroke="#5f52c9" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="870" y1="385" x2="900" y2="385" stroke="#5f52c9" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <line x1="750" y1="470" x2="640" y2="648" stroke="#b8740d" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="510" y1="470" x2="500" y2="606" stroke="#b8740d" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="250" y1="470" x2="220" y2="606" stroke="#b8740d" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="980" y1="470" x2="1020" y2="606" stroke="#2f6fda" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <rect x="36" y="728" width="12" height="12" class="client"/><text x="55" y="739" class="legend">Apps</text>
+  <rect x="110" y="728" width="12" height="12" class="backend"/><text x="129" y="739" class="legend">Backend</text>
+  <rect x="210" y="728" width="12" height="12" class="data"/><text x="229" y="739" class="legend">Donnees</text>
+  <rect x="290" y="728" width="12" height="12" class="ext"/><text x="309" y="739" class="legend">Services externes</text>
+</svg>

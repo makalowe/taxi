@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaxiOps - Dashboard Flotte</title>
+  <style>
+    :root {
+      --bg: #f4efe6;
+      --panel: #fffaf2;
+      --ink: #1f2a24;
+      --muted: #637168;
+      --line: #d8cfbe;
+      --accent: #ffb703;
+      --accent-deep: #d98d00;
+      --ok: #4d8b31;
+      --warn: #ce7a0f;
+      --danger: #bf2c2c;
+      --blue: #2f6fda;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 100% 0%, #ffe7b6 0%, transparent 35%),
+        radial-gradient(circle at 0% 100%, #dceee2 0%, transparent 35%),
+        var(--bg);
+    }
+
+    .shell {
+      max-width: 1260px;
+      margin: 0 auto;
+      padding: 22px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .topbar {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: .2px;
+    }
+
+    .brand p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip {
+      background: #f0eadf;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 11px;
+      font-size: 12px;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+    }
+
+    .kpi {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .kpi .label { font-size: 12px; color: var(--muted); }
+    .kpi .value { font-size: 28px; margin-top: 4px; font-weight: 700; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      letter-spacing: .2px;
+    }
+
+    .map {
+      min-height: 320px;
+      border-radius: 12px;
+      border: 1px dashed #b5a88c;
+      background:
+        linear-gradient(45deg, #f3f0e7 25%, transparent 25%) -20px 0/40px 40px,
+        linear-gradient(-45deg, #f3f0e7 25%, transparent 25%) -20px 0/40px 40px,
+        linear-gradient(45deg, transparent 75%, #f3f0e7 75%) -20px 0/40px 40px,
+        linear-gradient(-45deg, transparent 75%, #f3f0e7 75%) -20px 0/40px 40px,
+        #faf6ec;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 12px;
+    }
+
+    .list { display: grid; gap: 8px; }
+    .row {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .title { font-weight: 600; font-size: 14px; }
+    .meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .pill {
+      font-size: 11px;
+      border-radius: 999px;
+      padding: 6px 9px;
+      height: fit-content;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+    }
+    .s-course { background: #e8f3e2; color: var(--ok); }
+    .s-free { background: #e8effa; color: var(--blue); }
+    .s-maint { background: #f9efdf; color: var(--warn); }
+    .s-down { background: #fbe9e9; color: var(--danger); }
+
+    .mini-chart {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 7px;
+      align-items: end;
+      height: 110px;
+      margin-top: 10px;
+    }
+    .bar { border-radius: 6px 6px 0 0; background: var(--accent); }
+    .legend { color: var(--muted); font-size: 12px; margin-top: 8px; }
+
+    @media (max-width: 920px) {
+      .layout { grid-template-columns: 1fr; }
+      .map { min-height: 220px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="topbar">
+      <div class="brand">
+        <h1>TaxiOps Fleet</h1>
+        <p>Vue manager en temps réel · 10 véhicules</p>
+      </div>
+      <div class="chips">
+        <div class="chip">Zone: Bruxelles</div>
+        <div class="chip">Dernière sync: <span id="last-sync">10:24</span></div>
+        <div class="chip">Alertes critiques: 1</div>
+      </div>
+    </section>
+
+    <section class="kpi-grid">
+      <article class="kpi"><div class="label">Véhicules actifs</div><div class="value">7</div></article>
+      <article class="kpi"><div class="label">En course</div><div class="value">4</div></article>
+      <article class="kpi"><div class="label">Disponibles</div><div class="value">3</div></article>
+      <article class="kpi"><div class="label">Maintenance</div><div class="value">2</div></article>
+      <article class="kpi"><div class="label">Revenus jour (€)</div><div class="value">1 840</div></article>
+    </section>
+
+    <section class="layout">
+      <article class="card">
+        <h2>Carte Live (placeholder Google Maps)</h2>
+        <div class="map">
+          Branche ici Google Maps API + marqueurs Socket.io.<br />
+          Events attendus: <code>vehicle:position.updated</code>, <code>ride:status.changed</code>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Alertes & Actions</h2>
+        <div class="list">
+          <div class="row">
+            <div>
+              <div class="title">TX-07 hors service</div>
+              <div class="meta">Batterie faible détectée · il y a 6 min</div>
+            </div>
+            <span class="pill s-down">Urgent</span>
+          </div>
+          <div class="row">
+            <div>
+              <div class="title">TX-04 maintenance planifiée</div>
+              <div class="meta">11:30 - Garage central</div>
+            </div>
+            <span class="pill s-maint">Planifié</span>
+          </div>
+          <div class="row">
+            <div>
+              <div class="title">4 courses en attente d’assignation</div>
+              <div class="meta">Prioriser zone centre</div>
+            </div>
+            <span class="pill s-course">Action</span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="layout">
+      <article class="card">
+        <h2>État de la flotte</h2>
+        <div class="list">
+          <div class="row"><div><div class="title">TX-01 · Marc Dupont</div><div class="meta">AB-123-CD · 78% carburant</div></div><span class="pill s-course">En course</span></div>
+          <div class="row"><div><div class="title">TX-02 · Sara Lemaire</div><div class="meta">BC-456-DE · 92% carburant</div></div><span class="pill s-free">Disponible</span></div>
+          <div class="row"><div><div class="title">TX-04 · Amina Bouzid</div><div class="meta">DE-012-FG · contrôle freins</div></div><span class="pill s-maint">Maintenance</span></div>
+          <div class="row"><div><div class="title">TX-08 · Sophie Laurent</div><div class="meta">HI-234-JK · course en cours</div></div><span class="pill s-course">En course</span></div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Revenus 7 jours</h2>
+        <div class="mini-chart">
+          <div class="bar" style="height: 46%"></div>
+          <div class="bar" style="height: 53%"></div>
+          <div class="bar" style="height: 61%"></div>
+          <div class="bar" style="height: 47%"></div>
+          <div class="bar" style="height: 74%"></div>
+          <div class="bar" style="height: 82%"></div>
+          <div class="bar" style="height: 68%"></div>
+        </div>
+        <div class="legend">Lundi → Dimanche · Total semaine estimé: 11 920 €</div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const now = new Date();
+    const pad = (n) => `${n}`.padStart(2, "0");
+    document.getElementById("last-sync").textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  </script>
+</body>
+</html>
