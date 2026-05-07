@@ -1,2 +1,5 @@
 photo-ecran/
+photo-écran/
 *.png
+node_modules/
+backups/

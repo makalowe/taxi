@@ -3,197 +3,753 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Taxi Mons — Dashboard Flotte</title>
+  <title>Taxi Mons — Dashboard Flotte Temps Réel</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
   <style>
     :root {
+      --sidebar-w: 220px;
+      --sidebar-bg: #0c0f14;
+      --sidebar-hover: #1a1f28;
+      --sidebar-active: #252b38;
+      --color-accent: #d98d00;
+      --color-accent-light: #FAC775;
       --color-text-primary: #1f2a24;
       --color-text-secondary: #637168;
-      --color-background-primary: #ffffff;
-      --color-background-secondary: #f4efe6;
-      --color-border-tertiary: #d8cfbe;
-      --color-border-secondary: #bfb3a0;
+      --color-bg: #f4efe6;
+      --color-card: #ffffff;
+      --color-card-alt: #faf7f2;
+      --color-border: #d8cfbe;
+      --color-green: #3B6D11;
+      --color-green-bg: #EAF3DE;
+      --color-blue: #185FA5;
+      --color-blue-bg: #E6F1FB;
+      --color-amber: #854F0B;
+      --color-amber-bg: #FAEEDA;
+      --color-red: #A32D2D;
+      --color-red-bg: #FCEBEB;
       --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
-      --border-radius-md: 8px;
-      --border-radius-lg: 12px;
+      --radius: 10px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
     body {
       font-family: var(--font-sans);
-      background: #faf7f2;
+      background: var(--color-bg);
       color: var(--color-text-primary);
-      padding: 0 20px;
+      display: flex;
     }
-    .app { max-width: 1200px; margin: 0 auto; padding: 1rem 0; }
-    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px; }
-    .logo { display: flex; align-items: center; gap: 10px; }
-    .logo-icon { width: 36px; height: 36px; background: #FAC775; border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; font-size: 18px; }
-    .logo-text { font-size: 20px; font-weight: 600; color: var(--color-text-primary); }
-    .logo-sub { font-size: 12px; color: var(--color-text-secondary); }
-    .tabs { display: flex; gap: 4px; background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 4px; }
-    .tab { padding: 6px 14px; font-size: 13px; border: none; background: none; cursor: pointer; border-radius: 6px; color: var(--color-text-secondary); font-family: var(--font-sans); }
-    .tab.active { background: var(--color-background-primary); color: var(--color-text-primary); font-weight: 500; border: 0.5px solid var(--color-border-tertiary); }
-    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
-    .metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px 16px; }
-    .metric-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 6px; }
-    .metric-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
-    .metric-value.green { color: #3B6D11; }
-    .metric-value.amber { color: #854F0B; }
-    .metric-value.red { color: #A32D2D; }
-    .section-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 10px; }
-    .fleet-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
-    .vehicle-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 14px 16px; cursor: pointer; transition: border-color 0.15s; }
-    .vehicle-card:hover { border-color: var(--color-border-secondary); }
-    .vehicle-card.selected { border: 1.5px solid #378ADD; }
+    .app { flex: 1; display: flex; min-height: 100vh; }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 100;
+    }
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 20px 16px 16px;
+      border-bottom: 0.5px solid rgba(255,255,255,0.08);
+    }
+    .sidebar-logo-icon {
+      width: 36px; height: 36px;
+      background: var(--color-accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .sidebar-logo-text {
+      font-size: 16px; font-weight: 600;
+      color: #ffffff;
+    }
+    .sidebar-logo-sub {
+      font-size: 10px;
+      color: rgba(255,255,255,0.45);
+      margin-top: -1px;
+    }
+    .sidebar-nav {
+      padding: 12px 8px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .sidebar-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-family: var(--font-sans);
+      text-align: left;
+      transition: all 0.15s;
+      width: 100%;
+    }
+    .sidebar-nav-item:hover {
+      background: var(--sidebar-hover);
+      color: rgba(255,255,255,0.85);
+    }
+    .sidebar-nav-item.active {
+      background: var(--sidebar-active);
+      color: var(--color-accent-light);
+      font-weight: 500;
+    }
+    .sidebar-nav-item .icon { font-size: 16px; width: 22px; text-align: center; }
+    .sidebar-nav-item .badge {
+      margin-left: auto;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.6);
+    }
+    .sidebar-nav-divider {
+      height: 0.5px;
+      background: rgba(255,255,255,0.08);
+      margin: 8px 12px;
+    }
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 0.5px solid rgba(255,255,255,0.08);
+    }
+    .sidebar-conn {
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .sidebar-conn-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #A32D2D;
+    }
+    .sidebar-conn-dot.online { background: #3B6D11; }
+
+    /* ===== MAIN CONTENT ===== */
+    .main {
+      flex: 1;
+      padding: 24px 28px;
+      min-width: 0;
+      max-width: calc(100vw - var(--sidebar-w));
+    }
+    .main-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+    .main-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+    .main-title span { color: var(--color-text-secondary); font-weight: 400; font-size: 14px; }
+    .main-actions { display: flex; gap: 8px; align-items: center; }
+
+    /* KPIs */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .metric {
+      background: var(--color-card-alt);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      border: 0.5px solid var(--color-border);
+    }
+    .metric-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; }
+    .metric-value { font-size: 24px; font-weight: 600; color: var(--color-text-primary); }
+    .metric-value.green { color: var(--color-green); }
+    .metric-value.amber { color: var(--color-amber); }
+    .metric-value.red { color: var(--color-red); }
+    .metric-change { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+
+    /* Main grid: map + side panel */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 960px) { .main-grid { grid-template-columns: 1fr; } }
+
+    #map {
+      height: 420px;
+      border-radius: var(--radius);
+      border: 0.5px solid var(--color-border);
+      z-index: 0;
+    }
+
+    .side-panel { display: flex; flex-direction: column; gap: 12px; }
+    .panel-card {
+      background: var(--color-card);
+      border: 0.5px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .panel-card h3 { font-size: 13px; font-weight: 500; margin-bottom: 10px; color: var(--color-text-primary); }
+
+    .book-form { display: flex; flex-direction: column; gap: 10px; }
+    .form-row { display: flex; gap: 8px; }
+    .form-row input {
+      flex: 1; padding: 8px 10px;
+      border: 0.5px solid var(--color-border);
+      border-radius: 6px; font-size: 13px;
+      font-family: var(--font-sans);
+      background: var(--color-card-alt);
+      transition: border-color 0.15s;
+    }
+    .form-row input:focus { outline: none; border-color: var(--color-accent); }
+    .btn {
+      padding: 8px 16px; border: none;
+      border-radius: 6px; font-size: 13px;
+      font-weight: 500; cursor: pointer;
+      font-family: var(--font-sans);
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: var(--color-accent);
+      color: #412402;
+    }
+    .btn-primary:hover { background: #c87d00; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+    .book-btn { width: 100%; padding: 10px; font-size: 14px; }
+
+    .flow-visual {
+      display: flex; flex-direction: column; gap: 4px;
+      padding: 10px; background: var(--color-card-alt);
+      border-radius: 8px;
+      font-size: 12px; min-height: 80px;
+    }
+    .flow-step {
+      display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+      border-radius: 6px; transition: all 0.3s;
+      color: var(--color-text-secondary);
+    }
+    .flow-step.active { background: var(--color-green-bg); color: var(--color-green); font-weight: 500; }
+    .flow-step.error { background: var(--color-red-bg); color: var(--color-red); }
+    .flow-step .icon { font-size: 16px; width: 24px; text-align: center; }
+    .flow-step .time { margin-left: auto; font-size: 11px; color: var(--color-text-secondary); }
+
+    /* Fleet grid */
+    .filter-row {
+      display: flex; gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-label { font-size: 13px; color: var(--color-text-secondary); }
+    .filter-btn {
+      padding: 4px 10px; font-size: 12px;
+      border-radius: 20px;
+      border: 0.5px solid var(--color-border);
+      background: var(--color-card-alt);
+      cursor: pointer;
+      color: var(--color-text-secondary);
+      font-family: var(--font-sans);
+      transition: all 0.15s;
+    }
+    .filter-btn:hover { background: var(--color-card); }
+    .filter-btn.active {
+      background: var(--color-accent);
+      border-color: var(--color-accent);
+      color: #412402;
+    }
+
+    .fleet-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .vehicle-card {
+      background: var(--color-card);
+      border: 0.5px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .vehicle-card:hover { border-color: #bfb3a0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .vehicle-card.selected { border: 1.5px solid var(--color-accent); }
     .vc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
     .vc-id { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
     .vc-plate { font-size: 12px; color: var(--color-text-secondary); }
     .status-badge { font-size: 11px; padding: 3px 8px; border-radius: 20px; font-weight: 500; }
-    .status-en-course { background: #EAF3DE; color: #3B6D11; }
-    .status-disponible { background: #E6F1FB; color: #185FA5; }
-    .status-maintenance { background: #FAEEDA; color: #854F0B; }
-    .status-hors-service { background: #FCEBEB; color: #A32D2D; }
+    .status-en-course { background: var(--color-green-bg); color: var(--color-green); }
+    .status-disponible { background: var(--color-blue-bg); color: var(--color-blue); }
+    .status-maintenance { background: var(--color-amber-bg); color: var(--color-amber); }
+    .status-hors-service { background: var(--color-red-bg); color: var(--color-red); }
     .vc-driver { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-    .avatar { width: 22px; height: 22px; border-radius: 50%; background: #B5D4F4; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; color: #185FA5; flex-shrink: 0; }
+    .avatar {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--color-blue-bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 500;
+      color: var(--color-blue); flex-shrink: 0;
+    }
     .vc-stats { display: flex; gap: 16px; }
     .vc-stat { font-size: 12px; color: var(--color-text-secondary); }
     .vc-stat strong { color: var(--color-text-primary); display: block; font-size: 13px; font-weight: 500; }
-    .vc-bar { height: 3px; background: var(--color-background-secondary); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+    .vc-bar { height: 3px; background: var(--color-bg); border-radius: 2px; margin-top: 8px; overflow: hidden; }
     .vc-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
-    .detail-panel { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 20px; margin-bottom: 1.5rem; display: none; }
-    .detail-panel.show { display: block; }
-    .dp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .dp-title { font-size: 16px; font-weight: 500; }
-    .close-btn { background: none; border: none; cursor: pointer; font-size: 16px; color: var(--color-text-secondary); }
-    .dp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-    .dp-item { }
-    .dp-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 2px; }
-    .dp-val { font-size: 14px; color: var(--color-text-primary); font-weight: 500; }
-    .history-list { border-top: 0.5px solid var(--color-border-tertiary); padding-top: 14px; }
-    .history-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--color-border-tertiary); font-size: 13px; }
-    .history-item:last-child { border-bottom: none; }
-    .h-time { color: var(--color-text-secondary); min-width: 50px; font-size: 12px; }
-    .h-route { flex: 1; color: var(--color-text-primary); }
-    .h-fare { font-weight: 500; color: #3B6D11; }
-    .action-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; }
-    .filter-row { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
-    .filter-label { font-size: 13px; color: var(--color-text-secondary); }
-    .filter-btn { padding: 4px 10px; font-size: 12px; border-radius: 20px; border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-primary); cursor: pointer; color: var(--color-text-secondary); font-family: var(--font-sans); }
-    .filter-btn.active { background: #EF9F27; border-color: #EF9F27; color: #412402; }
-    .revenue-section { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 16px; }
+
+    /* Revenue */
+    .revenue-section {
+      background: var(--color-card);
+      border: 0.5px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
     .rev-chart { display: flex; align-items: flex-end; gap: 6px; height: 100px; margin-top: 12px; }
     .rev-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .rev-bar { width: 100%; background: #FAC775; border-radius: 3px 3px 0 0; transition: height 0.5s; }
+    .rev-bar {
+      width: 100%;
+      background: var(--color-accent-light);
+      border-radius: 3px 3px 0 0;
+      transition: height 0.5s;
+    }
     .rev-label { font-size: 10px; color: var(--color-text-secondary); text-align: center; }
+
+    /* Pages */
     .page { display: none; }
     .page.active { display: block; }
-    footer { margin-top: 2rem; padding: 1rem 0; text-align: center; font-size: 12px; color: var(--color-text-secondary); border-top: 0.5px solid var(--color-border-tertiary); }
+
+    /* Notification */
+    .ride-notif {
+      position: fixed; bottom: 20px; right: 20px;
+      background: white; border-radius: 12px; padding: 16px 20px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+      border: 0.5px solid var(--color-border);
+      max-width: 320px; z-index: 1000;
+      display: none; animation: slideUp 0.3s ease;
+    }
+    .ride-notif.show { display: block; }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .ride-notif .title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+    .ride-notif .sub { font-size: 12px; color: var(--color-text-secondary); }
+
+    footer {
+      margin-top: 2rem;
+      padding: 1rem 0 0;
+      text-align: center;
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      border-top: 0.5px solid var(--color-border);
+    }
+
+    /* Scrollbar sidebar */
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-track { background: transparent; }
+    .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
   </style>
 </head>
 <body>
-
 <div class="app">
-  <div class="header">
-    <div class="logo">
-      <div class="logo-icon">🚕</div>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">🚕</div>
       <div>
-        <div class="logo-text">Taxi Mons</div>
-        <div class="logo-sub">Gestion de flotte — Mons, Belgique</div>
+        <div class="sidebar-logo-text">Taxi Mons</div>
+        <div class="sidebar-logo-sub">Gestion de flotte</div>
       </div>
     </div>
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('flotte')">Flotte</button>
-      <button class="tab" onclick="switchTab('revenus')">Revenus</button>
-      <button class="tab" onclick="switchTab('chauffeurs')">Chauffeurs</button>
-    </div>
-  </div>
-
-  <div class="metrics">
-    <div class="metric"><div class="metric-label">Actifs aujourd'hui</div><div class="metric-value green" id="m-actifs">7</div></div>
-    <div class="metric"><div class="metric-label">En course</div><div class="metric-value" id="m-encourse">4</div></div>
-    <div class="metric"><div class="metric-label">En maintenance</div><div class="metric-value amber" id="m-maint">2</div></div>
-    <div class="metric"><div class="metric-label">Revenus du jour (€)</div><div class="metric-value" id="m-rev">1 840</div></div>
-    <div class="metric"><div class="metric-label">Courses totales</div><div class="metric-value" id="m-courses">38</div></div>
-  </div>
-
-  <div id="page-flotte" class="page active">
-    <div class="filter-row">
-      <span class="filter-label">Filtrer :</span>
-      <button class="filter-btn active" onclick="filterFleet('tous', this)">Tous</button>
-      <button class="filter-btn" onclick="filterFleet('en-course', this)">En course</button>
-      <button class="filter-btn" onclick="filterFleet('disponible', this)">Disponibles</button>
-      <button class="filter-btn" onclick="filterFleet('maintenance', this)">Maintenance</button>
-      <button class="filter-btn" onclick="filterFleet('hors-service', this)">Hors service</button>
-    </div>
-
-    <div id="detail-panel" class="detail-panel">
-      <div class="dp-header">
-        <div class="dp-title" id="dp-title">Détail véhicule</div>
-        <button class="close-btn" onclick="closeDetail()">✕</button>
+    <nav class="sidebar-nav">
+      <button class="sidebar-nav-item active" onclick="switchTab('flotte')">
+        <span class="icon">📊</span> Flotte
+      </button>
+      <button class="sidebar-nav-item" onclick="switchTab('revenus')">
+        <span class="icon">💰</span> Revenus
+      </button>
+      <button class="sidebar-nav-item" onclick="switchTab('chauffeurs')">
+        <span class="icon">👤</span> Chauffeurs
+      </button>
+      <div class="sidebar-nav-divider"></div>
+      <button class="sidebar-nav-item" onclick="switchTab('recap')">
+        <span class="icon">📋</span> Bilan
+        <span class="badge">Détails</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-conn">
+        <span class="sidebar-conn-dot" id="s-conn-dot"></span>
+        <span id="s-conn-text">Hors ligne</span>
       </div>
-      <div class="dp-grid" id="dp-content"></div>
-      <div class="history-list" id="dp-history"></div>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <main class="main">
+    <div class="main-header">
+      <div>
+        <div class="main-title">Tableau de bord <span>Mons, Belgique</span></div>
+      </div>
+      <div class="main-actions">
+        <span id="conn-status" style="font-size:12px;color:var(--color-text-secondary);">🔴 Hors ligne</span>
+      </div>
     </div>
 
-    <div class="fleet-grid" id="fleet-grid"></div>
-  </div>
-
-  <div id="page-revenus" class="page">
-    <div class="revenue-section">
-      <div class="section-title">Revenus par véhicule — aujourd'hui (€)</div>
-      <div class="rev-chart" id="rev-chart"></div>
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">Actifs aujourd'hui</div><div class="metric-value green" id="m-actifs">0</div><div class="metric-change">Véhicules opérationnels</div></div>
+      <div class="metric"><div class="metric-label">En course</div><div class="metric-value" id="m-encourse">0</div></div>
+      <div class="metric"><div class="metric-label">Disponibles</div><div class="metric-value" id="m-dispos">0</div></div>
+      <div class="metric"><div class="metric-label">Revenus du jour</div><div class="metric-value green" id="m-rev">0 €</div></div>
+      <div class="metric"><div class="metric-label">Courses totales</div><div class="metric-value" id="m-courses">0</div></div>
     </div>
-    <div style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 10px;" id="rev-list"></div>
-  </div>
 
-  <div id="page-chauffeurs" class="page">
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 10px;" id="drivers-grid"></div>
-  </div>
+    <!-- Page Flotte -->
+    <div id="page-flotte" class="page active">
+      <div class="main-grid">
+        <div id="map"></div>
+        <div class="side-panel">
+          <div class="panel-card">
+            <h3>🚕 Commander une course</h3>
+            <div class="book-form">
+              <div class="form-row">
+                <input type="text" id="pickup" placeholder="Départ" value="Grand-Place" />
+              </div>
+              <div class="form-row">
+                <input type="text" id="dropoff" placeholder="Arrivée" value="Gare de Mons" />
+              </div>
+              <button class="btn btn-primary book-btn" id="book-btn" onclick="bookRide()">
+                🚀 Commander
+              </button>
+              <div id="estimate" style="font-size:12px;color:var(--color-text-secondary);text-align:center;"></div>
+            </div>
+          </div>
+          <div class="panel-card">
+            <h3>📋 Statut de la course</h3>
+            <div class="flow-visual" id="flow-status">
+              <div style="color:var(--color-text-secondary);text-align:center;padding:20px 0;">
+                Cliquez sur "Commander" pour simuler une course
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <span class="filter-label">Filtrer :</span>
+        <button class="filter-btn active" onclick="filterFleet('tous', this)">Tous</button>
+        <button class="filter-btn" onclick="filterFleet('en-course', this)">En course</button>
+        <button class="filter-btn" onclick="filterFleet('disponible', this)">Disponibles</button>
+        <button class="filter-btn" onclick="filterFleet('maintenance', this)">Maintenance</button>
+        <button class="filter-btn" onclick="filterFleet('hors-service', this)">Hors service</button>
+      </div>
+      <div class="fleet-grid" id="fleet-grid"></div>
+    </div>
+
+    <!-- Page Revenus -->
+    <div id="page-revenus" class="page">
+      <div class="revenue-section">
+        <div class="section-title" style="font-size:14px;font-weight:500;margin-bottom:10px;">Revenus par véhicule — aujourd'hui (€)</div>
+        <div class="rev-chart" id="rev-chart"></div>
+      </div>
+      <div style="margin-top:1rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;" id="rev-list"></div>
+    </div>
+
+    <!-- Page Chauffeurs -->
+    <div id="page-chauffeurs" class="page">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;" id="drivers-grid"></div>
+    </div>
+
+    <!-- Page Bilan -->
+    <div id="page-recap" class="page">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <div class="section-title" style="font-size:14px;font-weight:500;margin:0;">📊 Bilan complet des chauffeurs</div>
+        <button class="btn btn-primary btn-sm" onclick="loadRecap()">🔄 Actualiser</button>
+      </div>
+      <div id="recap-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;"></div>
+      <div id="recap-content"></div>
+    </div>
+
+    <footer>
+      Taxi Mons &copy; 2026 — Backend temps réel
+    </footer>
+  </main>
 </div>
 
-<footer>
-  Taxi Mons &copy; 2026 — Application de réservation de taxis à Mons, Belgique
-</footer>
+<!-- Notification -->
+<div id="ride-notif" class="ride-notif">
+  <div class="title" id="notif-title">🚕 Taxi en route</div>
+  <div class="sub" id="notif-sub">Marc Dupont - TX-01 arrive dans 3 min</div>
+</div>
 
 <script>
-const vehicles = [
-  { id:'TX-01', plate:'AB-123-CD', driver:'Marc Dupont', status:'en-course', km:142340, fuel:78, courses:5, revenue:210, route:'Mons Centre → Gare', lastUpdate:'09:42' },
-  { id:'TX-02', plate:'BC-456-DE', driver:'Sara Lemaire', status:'disponible', km:98210, fuel:92, courses:3, revenue:130, route:'Grand-Place', lastUpdate:'10:15' },
-  { id:'TX-03', plate:'CD-789-EF', driver:'Jean Moreau', status:'en-course', km:210540, fuel:55, courses:6, revenue:280, route:'Ghlin → Nimy', lastUpdate:'10:08' },
-  { id:'TX-04', plate:'DE-012-FG', driver:'Amina Bouzid', status:'maintenance', km:175000, fuel:30, courses:0, revenue:0, route:'—', lastUpdate:'08:00' },
-  { id:'TX-05', plate:'EF-345-GH', driver:'Luc Renard', status:'en-course', km:88700, fuel:64, courses:4, revenue:175, route:'Cuesmes → Jemappes', lastUpdate:'10:22' },
-  { id:'TX-06', plate:'FG-678-HI', driver:'Nora Petit', status:'disponible', km:132000, fuel:88, courses:2, revenue:85, route:'Hyon', lastUpdate:'09:55' },
-  { id:'TX-07', plate:'GH-901-IJ', driver:'Karim Ouali', status:'hors-service', km:305000, fuel:10, courses:0, revenue:0, route:'—', lastUpdate:'07:30' },
-  { id:'TX-08', plate:'HI-234-JK', driver:'Sophie Laurent', status:'en-course', km:54200, fuel:71, courses:5, revenue:245, route:'Saint-Denis → Obourg', lastUpdate:'10:19' },
-  { id:'TX-09', plate:'IJ-567-KL', driver:'Pierre Tran', status:'disponible', km:167800, fuel:95, courses:3, revenue:115, route:'Maisières', lastUpdate:'10:01' },
-  { id:'TX-10', plate:'JK-890-LM', driver:'Fatou Diallo', status:'maintenance', km:220100, fuel:20, courses:0, revenue:600, route:'—', lastUpdate:'08:15' },
-];
+// ============================================
+// CONFIGURATION
+// ============================================
+const API_URL = 'http://localhost:3002';
+const socket = io(API_URL, { transports: ['websocket', 'polling'] });
 
-const histories = {
-  'TX-01': [{t:'09:42',r:'Mons Centre → Gare',f:'18€'},{t:'08:55',r:'Nimy → Grand-Place',f:'12€'},{t:'08:10',r:'Ghlin → Jemappes',f:'15€'}],
-  'TX-02': [{t:'10:15',r:'Grand-Place → Hyon',f:'10€'},{t:'09:30',r:'Cuesmes → Mons Centre',f:'14€'}],
-  'TX-03': [{t:'10:08',r:'Ghlin → Nimy',f:'22€'},{t:'09:20',r:'Obourg → Saint-Denis',f:'18€'},{t:'08:40',r:'Mons → Jemappes',f:'13€'}],
-  'TX-05': [{t:'10:22',r:'Cuesmes → Jemappes',f:'16€'},{t:'09:45',r:'Hyon → Grand-Place',f:'11€'}],
-  'TX-06': [{t:'09:55',r:'Hyon → Mons Centre',f:'12€'}],
-  'TX-08': [{t:'10:19',r:'Saint-Denis → Obourg',f:'15€'},{t:'09:35',r:'Nimy → Ghlin',f:'13€'}],
-  'TX-09': [{t:'10:01',r:'Maisières → Cuesmes',f:'11€'},{t:'09:15',r:'Jemappes → Mons Centre',f:'14€'}],
-};
-
+// ============================================
+// ETAT GLOBAL
+// ============================================
+let vehicles = [];
 let currentFilter = 'tous';
 let selectedCard = null;
+let map = null;
+let markers = [];
+let currentRideFlow = [];
 
-function statusLabel(s) {
-  return {
-    'en-course': 'En course',
-    'disponible': 'Disponible',
-    'maintenance': 'Maintenance',
-    'hors-service': 'Hors service'
-  }[s] || s;
+// ============================================
+// SOCKET.IO
+// ============================================
+socket.on('connect', () => {
+  document.getElementById('conn-status').textContent = '🟢 Connecté';
+  document.getElementById('s-conn-dot').className = 'sidebar-conn-dot online';
+  document.getElementById('s-conn-text').textContent = 'Connecté';
+});
+
+socket.on('disconnect', () => {
+  document.getElementById('conn-status').textContent = '🔴 Hors ligne';
+  document.getElementById('s-conn-dot').className = 'sidebar-conn-dot';
+  document.getElementById('s-conn-text').textContent = 'Hors ligne';
+});
+
+socket.on('fleet:init', (data) => {
+  vehicles = data;
+  renderAll();
+  initMap();
+  updateEstimate();
+});
+
+socket.on('fleet:update', (data) => {
+  vehicles = data;
+  renderAll();
+  updateMapMarkers();
+});
+
+socket.on('kpis:update', (kpis) => {
+  document.getElementById('m-actifs').textContent = kpis.actifs;
+  document.getElementById('m-encourse').textContent = kpis.enCourse;
+  document.getElementById('m-dispos').textContent = kpis.disponibles;
+  document.getElementById('m-rev').textContent = kpis.revenueTotal.toLocaleString() + ' €';
+  document.getElementById('m-courses').textContent = kpis.coursesTotal;
+});
+
+socket.on('ride:new', (ride) => {
+  addFlowStep('📝', 'Course créée', `${ride.driverName} assigné`);
+  showNotification('📝 Course créée', `${ride.driverName} - ${ride.vehiclePlate} en route`);
+});
+
+socket.on('ride:accepted', (data) => {
+  addFlowStep('✅', 'Chauffeur accepte', `${data.driverName} arrive dans ${data.etaMinutes} min`);
+  showNotification('✅ Chauffeur en route', `${data.driverName} - ETA: ${data.etaMinutes} min`);
+});
+
+socket.on('ride:no-taxis', () => {
+  addFlowStep('❌', 'Aucun taxi disponible', 'Veuillez réessayer plus tard', true);
+});
+
+// ============================================
+// CARTE LEAFLET
+// ============================================
+function initMap() {
+  if (map) return;
+  map = L.map('map', { zoomControl: true }).setView([50.4541, 3.9568], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+  updateMapMarkers();
 }
 
-function fuelColor(f) {
-  if (f >= 70) return '#639922';
-  if (f >= 40) return '#EF9F27';
-  return '#E24B4A';
+function getStatusColor(s) {
+  return { 'en-course':'#3B6D11', 'disponible':'#185FA5', 'maintenance':'#854F0B', 'hors-service':'#A32D2D' }[s] || '#999';
+}
+
+function getStatusLabel(s) {
+  return { 'en-course':'En course', 'disponible':'Disponible', 'maintenance':'Maintenance', 'hors-service':'Hors service' }[s] || s;
+}
+
+function updateMapMarkers() {
+  if (!map) return;
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+
+  const filtered = currentFilter === 'tous' ? vehicles : vehicles.filter(v => v.status === currentFilter);
+  filtered.forEach(v => {
+    const color = getStatusColor(v.status);
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="
+        width:30px;height:30px;border-radius:50%;
+        background:${color};color:#fff;
+        display:flex;align-items:center;justify-content:center;
+        font-size:14px;font-weight:600;
+        border:2.5px solid #fff;
+        box-shadow:0 2px 8px rgba(0,0,0,0.3);
+      ">🚕</div>`,
+      iconSize: [30, 30],
+      iconAnchor: [15, 15],
+      popupAnchor: [0, -18]
+    });
+    const marker = L.marker([v.lat, v.lng], { icon }).addTo(map);
+    marker.bindPopup(`
+      <div style="font-family:sans-serif;font-size:13px;min-width:180px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          <strong>${v.id}</strong>
+          <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${color};color:#fff;">
+            ${getStatusLabel(v.status)}
+          </span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;color:#555;">👤 ${v.driver}</div>
+        <div style="color:#555;">🔧 ${v.plate}</div>
+        <div style="color:#555;">📍 ${v.route || '—'}</div>
+        <div style="margin-top:4px;font-size:11px;color:#888;">
+          🛣️ ${v.km?.toLocaleString()} km · ⛽ ${v.fuel}% · 💰 ${v.revenueToday || 0}€
+        </div>
+      </div>
+    `);
+    marker.on('click', () => selectVehicle(v.id));
+    markers.push(marker);
+  });
+
+  if (filtered.length > 0 && markers.length > 0) {
+    try {
+      const group = L.featureGroup(markers);
+      map.fitBounds(group.getBounds().pad(0.15));
+    } catch(e) {}
+  }
+}
+
+// ============================================
+// COMMANDER UNE COURSE
+// ============================================
+function updateEstimate() {
+  const pickup = document.getElementById('pickup').value;
+  const dropoff = document.getElementById('dropoff').value;
+  const locs = window._locations || {};
+  const p = locs[pickup];
+  const d = locs[dropoff];
+  if (!p || !d) {
+    document.getElementById('estimate').textContent = '';
+    return;
+  }
+  const dist = haversine(p.lat, p.lng, d.lat, d.lng);
+  const hour = new Date().getHours();
+  const night = hour >= 22 || hour < 6;
+  const tarif = dist <= 5 ? 1.65 : 2.50;
+  const prise = night ? 6 : 3;
+  const total = prise + dist * tarif;
+  const dispo = vehicles.filter(v => v.status === 'disponible').length;
+  document.getElementById('estimate').innerHTML =
+    `<strong>${Math.round(dist*10)/10} km</strong> · ` +
+    `<strong>${Math.round(total*100)/100} €</strong> (fixe) · ` +
+    `${dispo} taxi${dispo > 1 ? 's' : ''} disponible${dispo > 1 ? 's' : ''}`;
+}
+
+function bookRide() {
+  const btn = document.getElementById('book-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Recherche...';
+  const locs = window._locations || {};
+  const pickup = document.getElementById('pickup').value;
+  const dropoff = document.getElementById('dropoff').value;
+  const p = locs[pickup];
+  const d = locs[dropoff];
+
+  if (!p || !d) {
+    addFlowStep('❌', 'Lieu invalide', 'Utilisez Grand-Place, Gare de Mons, etc.', true);
+    btn.disabled = false;
+    btn.textContent = '🚀 Commander';
+    return;
+  }
+
+  document.getElementById('flow-status').innerHTML = '';
+  currentRideFlow = [];
+  addFlowStep('📝', 'Demande de course...', `${pickup} → ${dropoff}`);
+
+  socket.emit('ride:request', {
+    pickupLat: p.lat, pickupLng: p.lng,
+    dropoffLat: d.lat, dropoffLng: d.lng,
+    clientName: 'Démo Dashboard'
+  }, (err, result) => {
+    if (err) {
+      addFlowStep('❌', 'Erreur', err.error, true);
+      btn.disabled = false;
+      btn.textContent = '🚀 Commander';
+      return;
+    }
+
+    if (map) {
+      map.eachLayer((layer) => { if (layer._isBookMarker) map.removeLayer(layer); });
+      const pickupIcon = L.divIcon({ className: '', html: '<div style="font-size:20px;">🟢</div>', iconSize: [20,20], iconAnchor: [10,10] });
+      const dropIcon = L.divIcon({ className: '', html: '<div style="font-size:20px;">🏁</div>', iconSize: [20,20], iconAnchor: [10,10] });
+      const pm = L.marker([p.lat, p.lng], { icon: pickupIcon }).addTo(map); pm._isBookMarker = true;
+      const dm = L.marker([d.lat, d.lng], { icon: dropIcon }).addTo(map); dm._isBookMarker = true;
+      const line = L.polyline([[p.lat, p.lng], [d.lat, d.lng]], { color: '#d98d00', weight: 3, dashArray: '8,6' }).addTo(map);
+      line._isBookMarker = true;
+      map.fitBounds([[p.lat, p.lng], [d.lat, d.lng]].map(b => b), { padding: [50, 50] });
+    }
+
+    addFlowStep('🔄', 'Dispatch en cours...', 'Recherche du taxi le plus proche...');
+    setTimeout(() => {
+      const dispatch = result.dispatch;
+      addFlowStep('🎯', 'Taxi trouvé !', `${dispatch.vehicle.driver} (${dispatch.vehicle.id}) à ${dispatch.distanceKm} km · ETA: ${dispatch.etaMinutes} min`);
+      setTimeout(() => {
+        addFlowStep('✅', 'Chauffeur accepte', `${dispatch.vehicle.driver} en route vers ${pickup}`);
+        showNotification('✅ Course acceptée', `${dispatch.vehicle.driver} - ${dispatch.vehicle.plate} arrive dans ${dispatch.etaMinutes} min`);
+        btn.disabled = false;
+        btn.textContent = '🚀 Commander';
+      }, 2000);
+    }, 1500);
+  });
+}
+
+function addFlowStep(icon, title, detail, isError = false) {
+  const flow = document.getElementById('flow-status');
+  const time = new Date().toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const div = document.createElement('div');
+  div.className = `flow-step ${isError ? 'error' : 'active'}`;
+  div.innerHTML = `<span class="icon">${icon}</span><span><strong>${title}</strong><br>${detail}</span><span class="time">${time}</span>`;
+  flow.appendChild(div);
+  flow.scrollTop = flow.scrollHeight;
+  currentRideFlow.push({ icon, title, detail, time, isError });
+}
+
+function showNotification(title, sub) {
+  const notif = document.getElementById('ride-notif');
+  document.getElementById('notif-title').textContent = title;
+  document.getElementById('notif-sub').textContent = sub;
+  notif.classList.add('show');
+  setTimeout(() => notif.classList.remove('show'), 5000);
+}
+
+// ============================================
+// VÉHICULES
+// ============================================
+function renderAll() {
+  renderFleet();
+  if (document.getElementById('page-revenus').classList.contains('active')) renderRevenue();
+  if (document.getElementById('page-chauffeurs').classList.contains('active')) renderDrivers();
+  if (document.getElementById('page-recap').classList.contains('active')) loadRecap();
 }
 
 function renderFleet() {
@@ -206,94 +762,80 @@ function renderFleet() {
           <div class="vc-id">${v.id}</div>
           <div class="vc-plate">${v.plate}</div>
         </div>
-        <span class="status-badge status-${v.status}">${statusLabel(v.status)}</span>
+        <span class="status-badge status-${v.status}">${getStatusLabel(v.status)}</span>
       </div>
       <div class="vc-driver">
-        <div class="avatar">${v.driver.split(' ').map(n=>n[0]).join('')}</div>
+        <div class="avatar">${v.driver?.split(' ').map(n=>n[0]).join('') || '?'}</div>
         ${v.driver}
       </div>
       <div class="vc-stats">
-        <div class="vc-stat"><strong>${v.km.toLocaleString()} km</strong>Kilométrage</div>
-        <div class="vc-stat"><strong>${v.courses}</strong>Courses</div>
-        <div class="vc-stat"><strong>${v.revenue} €</strong>Revenus</div>
+        <div class="vc-stat"><strong>${(v.km || 0).toLocaleString()} km</strong>Kilométrage</div>
+        <div class="vc-stat"><strong>${v.coursesToday || 0}</strong>Courses</div>
+        <div class="vc-stat"><strong>${v.revenueToday || 0} €</strong>Revenus</div>
       </div>
-      <div class="vc-bar"><div class="vc-bar-fill" style="width:${v.fuel}%;background:${fuelColor(v.fuel)}"></div></div>
-      <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px;">Carburant : ${v.fuel}%</div>
+      <div class="vc-bar"><div class="vc-bar-fill" style="width:${v.fuel || 0}%;background:${fuelColor(v.fuel || 0)}"></div></div>
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px;">Carburant : ${v.fuel || 0}% · 📍 ${v.route || '—'}</div>
     </div>
   `).join('');
 }
 
-function selectVehicle(id) {
-  if (selectedCard === id) { closeDetail(); return; }
-  selectedCard = id;
-  const v = vehicles.find(x => x.id === id);
-  const panel = document.getElementById('detail-panel');
-  document.getElementById('dp-title').textContent = `${v.id} — ${v.plate}`;
-  document.getElementById('dp-content').innerHTML = `
-    <div class="dp-item"><div class="dp-label">Chauffeur</div><div class="dp-val">${v.driver}</div></div>
-    <div class="dp-item"><div class="dp-label">Statut</div><div class="dp-val">${statusLabel(v.status)}</div></div>
-    <div class="dp-item"><div class="dp-label">Kilométrage</div><div class="dp-val">${v.km.toLocaleString()} km</div></div>
-    <div class="dp-item"><div class="dp-label">Carburant</div><div class="dp-val">${v.fuel}%</div></div>
-    <div class="dp-item"><div class="dp-label">Courses aujourd'hui</div><div class="dp-val">${v.courses}</div></div>
-    <div class="dp-item"><div class="dp-label">Revenus du jour</div><div class="dp-val">${v.revenue} €</div></div>
-    <div class="dp-item"><div class="dp-label">Position actuelle</div><div class="dp-val">${v.route}</div></div>
-    <div class="dp-item"><div class="dp-label">Dernière mise à jour</div><div class="dp-val">${v.lastUpdate}</div></div>
-  `;
-  const hist = histories[id] || [];
-  document.getElementById('dp-history').innerHTML = hist.length
-    ? '<div class="section-title" style="margin-bottom:8px;">Dernières courses</div>' + hist.map(h => `
-        <div class="history-item">
-          <div class="h-time">${h.t}</div>
-          <div class="h-route">${h.r}</div>
-          <div class="h-fare">${h.f}</div>
-        </div>`).join('')
-    : '<div style="font-size:13px;color:var(--color-text-secondary);padding-top:8px;">Aucune course enregistrée.</div>';
-  panel.classList.add('show');
-  renderFleet();
+function fuelColor(f) {
+  if (f >= 70) return '#639922';
+  if (f >= 40) return '#d98d00';
+  return '#E24B4A';
 }
 
-function closeDetail() {
-  selectedCard = null;
-  document.getElementById('detail-panel').classList.remove('show');
+function selectVehicle(id) {
+  selectedCard = selectedCard === id ? null : id;
   renderFleet();
+  if (selectedCard && map) {
+    const v = vehicles.find(x => x.id === id);
+    if (v) map.setView([v.lat, v.lng], 15);
+  }
 }
 
 function filterFleet(f, btn) {
   currentFilter = f;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  closeDetail();
+  selectedCard = null;
+  renderFleet();
+  updateMapMarkers();
 }
 
+// ============================================
+// ONGLETS
+// ============================================
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sidebar-nav-item').forEach(t => t.classList.remove('active'));
   event.target.classList.add('active');
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + tab).classList.add('active');
   if (tab === 'revenus') renderRevenue();
   if (tab === 'chauffeurs') renderDrivers();
+  if (tab === 'recap') loadRecap();
 }
 
 function renderRevenue() {
-  const maxRev = Math.max(...vehicles.map(v => v.revenue));
+  const maxRev = Math.max(...vehicles.map(v => v.revenueToday || 0));
   document.getElementById('rev-chart').innerHTML = vehicles.map(v => `
     <div class="rev-bar-wrap">
-      <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:2px;">${v.revenue > 0 ? v.revenue+'€' : ''}</div>
-      <div class="rev-bar" style="height:${maxRev > 0 ? Math.round(v.revenue / maxRev * 80) : 0}px;background:${v.revenue > 0 ? '#EF9F27' : 'var(--color-background-secondary)'}"></div>
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:2px;">${(v.revenueToday || 0) > 0 ? v.revenueToday+'€' : ''}</div>
+      <div class="rev-bar" style="height:${maxRev > 0 ? Math.round((v.revenueToday||0) / maxRev * 80) : 0}px;background:${(v.revenueToday||0) > 0 ? '#d98d00' : 'var(--color-bg)'}"></div>
       <div class="rev-label">${v.id}</div>
     </div>
   `).join('');
-  const total = vehicles.reduce((s,v) => s+v.revenue, 0);
-  document.getElementById('rev-list').innerHTML = vehicles.filter(v=>v.revenue>0).sort((a,b)=>b.revenue-a.revenue).map(v => `
-    <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
+  const total = vehicles.reduce((s,v) => s + (v.revenueToday||0), 0);
+  document.getElementById('rev-list').innerHTML = vehicles.filter(v=>(v.revenueToday||0)>0).sort((a,b)=>b.revenueToday-a.revenueToday).map(v => `
+    <div style="background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
       <div>
         <div style="font-weight:500;font-size:14px;">${v.id} — ${v.driver}</div>
-        <div style="font-size:12px;color:var(--color-text-secondary);">${v.courses} courses</div>
+        <div style="font-size:12px;color:var(--color-text-secondary);">${v.coursesToday||0} courses</div>
       </div>
-      <div style="font-size:16px;font-weight:500;color:#3B6D11;">${v.revenue} €</div>
+      <div style="font-size:16px;font-weight:500;color:var(--color-green);">${v.revenueToday||0} €</div>
     </div>
   `).join('') + `
-    <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;grid-column:1/-1;">
+    <div style="background:var(--color-card-alt);border-radius:var(--radius);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;grid-column:1/-1;">
       <div style="font-size:14px;font-weight:500;">Total journalier</div>
       <div style="font-size:18px;font-weight:500;">${total} €</div>
     </div>`;
@@ -301,26 +843,152 @@ function renderRevenue() {
 
 function renderDrivers() {
   document.getElementById('drivers-grid').innerHTML = vehicles.map(v => `
-    <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:16px;">
+    <div style="background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius);padding:16px;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-        <div class="avatar" style="width:40px;height:40px;font-size:14px;">${v.driver.split(' ').map(n=>n[0]).join('')}</div>
+        <div class="avatar" style="width:40px;height:40px;font-size:14px;">${v.driver?.split(' ').map(n=>n[0]).join('') || '?'}</div>
         <div>
           <div style="font-weight:500;font-size:14px;">${v.driver}</div>
           <div style="font-size:12px;color:var(--color-text-secondary);">${v.id} · ${v.plate}</div>
         </div>
       </div>
-      <span class="status-badge status-${v.status}" style="margin-bottom:10px;display:inline-block;">${statusLabel(v.status)}</span>
+      <span class="status-badge status-${v.status}" style="margin-bottom:10px;display:inline-block;">${getStatusLabel(v.status)}</span>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
-        <div><div style="font-size:11px;color:var(--color-text-secondary);">Courses</div><div style="font-weight:500;">${v.courses}</div></div>
-        <div><div style="font-size:11px;color:var(--color-text-secondary);">Revenus</div><div style="font-weight:500;">${v.revenue} €</div></div>
-        <div><div style="font-size:11px;color:var(--color-text-secondary);">Kilométrage</div><div style="font-weight:500;">${v.km.toLocaleString()} km</div></div>
-        <div><div style="font-size:11px;color:var(--color-text-secondary);">Carburant</div><div style="font-weight:500;">${v.fuel}%</div></div>
+        <div><div style="font-size:11px;color:var(--color-text-secondary);">Courses</div><div style="font-weight:500;">${v.coursesToday||0}</div></div>
+        <div><div style="font-size:11px;color:var(--color-text-secondary);">Revenus</div><div style="font-weight:500;">${v.revenueToday||0} €</div></div>
+        <div><div style="font-size:11px;color:var(--color-text-secondary);">Kilométrage</div><div style="font-weight:500;">${(v.km||0).toLocaleString()} km</div></div>
+        <div><div style="font-size:11px;color:var(--color-text-secondary);">Carburant</div><div style="font-weight:500;">${v.fuel||0}%</div></div>
       </div>
     </div>
   `).join('');
 }
 
-renderFleet();
+// ============================================
+// UTILITAIRES
+// ============================================
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+window._locations = {
+  'Mons Centre': { lat: 50.4541, lng: 3.9568 },
+  'Grand-Place': { lat: 50.4547, lng: 3.9519 },
+  'Gare de Mons': { lat: 50.4556, lng: 3.9406 },
+  'Ghlin': { lat: 50.4783, lng: 3.9057 },
+  'Nimy': { lat: 50.4760, lng: 3.9590 },
+  'Cuesmes': { lat: 50.4329, lng: 3.9206 },
+  'Jemappes': { lat: 50.4480, lng: 3.8882 },
+  'Hyon': { lat: 50.4408, lng: 3.9623 },
+  'Saint-Denis': { lat: 50.4833, lng: 3.9761 },
+  'Obourg': { lat: 50.4744, lng: 4.0003 },
+  'Maisières': { lat: 50.4628, lng: 3.9494 },
+  'Havré': { lat: 50.4632, lng: 3.9841 },
+};
+
+// ============================================
+// RÉCAPITULATIF
+// ============================================
+function loadRecap() {
+  fetch(API_URL + '/api/rides/recap')
+    .then(r => r.json())
+    .then(data => {
+      renderRecapSummary(data);
+      renderRecapDrivers(data.drivers);
+    })
+    .catch(err => {
+      document.getElementById('recap-content').innerHTML =
+        `<div style="text-align:center;padding:40px;color:var(--color-text-secondary);">
+          ❌ Erreur : ${err.message}<br>
+          <small>Vérifiez que le backend est lancé sur ${API_URL}</small>
+        </div>`;
+    });
+}
+
+function renderRecapSummary(data) {
+  const totalRev = data.totalRevenueAll || 0;
+  const totalRides = data.totalRidesAll || 0;
+  const avgPerDriver = data.drivers.length > 0 ? (totalRev / data.drivers.length) : 0;
+  const topDriver = data.drivers[0]?.driver || '—';
+  document.getElementById('recap-summary').innerHTML = `
+    <div class="metric"><div class="metric-label">Total revenus</div><div class="metric-value green">${totalRev.toFixed(0)} €</div></div>
+    <div class="metric"><div class="metric-label">Courses totales</div><div class="metric-value">${totalRides}</div></div>
+    <div class="metric"><div class="metric-label">Moyenne/chauffeur</div><div class="metric-value">${avgPerDriver.toFixed(0)} €</div></div>
+    <div class="metric"><div class="metric-label">Meilleur chauffeur</div><div class="metric-value" style="font-size:16px;">🏆 ${topDriver}</div></div>
+  `;
+}
+
+function renderRecapDrivers(drivers) {
+  const container = document.getElementById('recap-content');
+  if (!drivers || drivers.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--color-text-secondary);">Aucune course enregistrée</div>';
+    return;
+  }
+  container.innerHTML = drivers.map((d, idx) => `
+    <div class="vehicle-card" style="margin-bottom:8px;cursor:default;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="font-weight:600;font-size:16px;color:var(--color-text-primary);">#${idx + 1}</div>
+          <div class="avatar" style="width:36px;height:36px;font-size:14px;">${d.driver?.split(' ').map(n=>n[0]).join('')}</div>
+          <div>
+            <div style="font-weight:500;font-size:15px;">${d.driver}</div>
+            <div style="font-size:12px;color:var(--color-text-secondary);">${d.vehicleId} · ${d.plate}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;">
+          <div style="text-align:center;">
+            <div style="font-size:18px;font-weight:500;color:var(--color-green);">${d.totalRevenue.toFixed(0)} €</div>
+            <div style="font-size:11px;color:var(--color-text-secondary);">Revenus</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:18px;font-weight:500;">${d.totalRides}</div>
+            <div style="font-size:11px;color:var(--color-text-secondary);">Courses</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:18px;font-weight:500;">${d.totalDistanceKm.toFixed(1)} km</div>
+            <div style="font-size:11px;color:var(--color-text-secondary);">Distance</div>
+          </div>
+          <div style="text-align:center;">
+            <span class="status-badge status-${d.status || 'disponible'}">${getStatusLabel(d.status || 'disponible')}</span>
+            <div style="font-size:11px;color:var(--color-text-secondary);margin-top:2px;">
+              ⛽ ${d.fuel || 0}% · 🛣️ ${((d.km || 0)/1000).toFixed(0)}k km
+            </div>
+          </div>
+        </div>
+      </div>
+      ${d.rides && d.rides.length > 0 ? `
+        <div style="margin-top:12px;padding-top:12px;border-top:0.5px solid var(--color-border);">
+          <div style="font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:8px;">
+            Dernières courses (${d.completedRides} terminées, ${d.cancelledRides} annulées)
+          </div>
+          <div style="display:grid;gap:4px;max-height:160px;overflow-y:auto;">
+            ${d.rides.slice(0, 10).map(r => `
+              <div style="display:flex;align-items:center;gap:8px;padding:4px 6px;background:var(--color-card-alt);border-radius:4px;font-size:12px;">
+                <span style="
+                  font-size:10px;padding:1px 6px;border-radius:8px;
+                  background:${r.status === 'completed' ? 'var(--color-green-bg)' : r.status === 'cancelled' ? 'var(--color-red-bg)' : 'var(--color-amber-bg)'};
+                  color:${r.status === 'completed' ? 'var(--color-green)' : r.status === 'cancelled' ? 'var(--color-red)' : 'var(--color-amber)'};
+                ">${r.status}</span>
+                <span style="flex:1;color:var(--color-text-primary);">${r.clientName || 'Client'}</span>
+                <span style="color:var(--color-text-secondary);">${r.distanceKm ? r.distanceKm + ' km' : '—'}</span>
+                <span style="font-weight:500;color:var(--color-green);">${r.price ? r.price.toFixed(2) + ' €' : '—'}</span>
+                <span style="color:var(--color-text-secondary);font-size:11px;">
+                  ${r.createdAt ? new Date(r.createdAt).toLocaleTimeString('fr-BE', {hour:'2-digit',minute:'2-digit'}) : ''}
+                </span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+document.getElementById('pickup').addEventListener('input', updateEstimate);
+document.getElementById('dropoff').addEventListener('input', updateEstimate);
+window.addEventListener('resize', () => { if (map) setTimeout(() => map.invalidateSize(), 200); });
 </script>
 </body>
 </html>
