@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Taxi Mons — Dashboard Flotte</title>
+  <style>
+    :root {
+      --color-text-primary: #1f2a24;
+      --color-text-secondary: #637168;
+      --color-background-primary: #ffffff;
+      --color-background-secondary: #f4efe6;
+      --color-border-tertiary: #d8cfbe;
+      --color-border-secondary: #bfb3a0;
+      --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
+      --border-radius-md: 8px;
+      --border-radius-lg: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      background: #faf7f2;
+      color: var(--color-text-primary);
+      padding: 0 20px;
+    }
+    .app { max-width: 1200px; margin: 0 auto; padding: 1rem 0; }
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px; }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon { width: 36px; height: 36px; background: #FAC775; border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .logo-text { font-size: 20px; font-weight: 600; color: var(--color-text-primary); }
+    .logo-sub { font-size: 12px; color: var(--color-text-secondary); }
+    .tabs { display: flex; gap: 4px; background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 4px; }
+    .tab { padding: 6px 14px; font-size: 13px; border: none; background: none; cursor: pointer; border-radius: 6px; color: var(--color-text-secondary); font-family: var(--font-sans); }
+    .tab.active { background: var(--color-background-primary); color: var(--color-text-primary); font-weight: 500; border: 0.5px solid var(--color-border-tertiary); }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+    .metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px 16px; }
+    .metric-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 6px; }
+    .metric-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+    .metric-value.green { color: #3B6D11; }
+    .metric-value.amber { color: #854F0B; }
+    .metric-value.red { color: #A32D2D; }
+    .section-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 10px; }
+    .fleet-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+    .vehicle-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 14px 16px; cursor: pointer; transition: border-color 0.15s; }
+    .vehicle-card:hover { border-color: var(--color-border-secondary); }
+    .vehicle-card.selected { border: 1.5px solid #378ADD; }
+    .vc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .vc-id { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+    .vc-plate { font-size: 12px; color: var(--color-text-secondary); }
+    .status-badge { font-size: 11px; padding: 3px 8px; border-radius: 20px; font-weight: 500; }
+    .status-en-course { background: #EAF3DE; color: #3B6D11; }
+    .status-disponible { background: #E6F1FB; color: #185FA5; }
+    .status-maintenance { background: #FAEEDA; color: #854F0B; }
+    .status-hors-service { background: #FCEBEB; color: #A32D2D; }
+    .vc-driver { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .avatar { width: 22px; height: 22px; border-radius: 50%; background: #B5D4F4; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; color: #185FA5; flex-shrink: 0; }
+    .vc-stats { display: flex; gap: 16px; }
+    .vc-stat { font-size: 12px; color: var(--color-text-secondary); }
+    .vc-stat strong { color: var(--color-text-primary); display: block; font-size: 13px; font-weight: 500; }
+    .vc-bar { height: 3px; background: var(--color-background-secondary); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+    .vc-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+    .detail-panel { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 20px; margin-bottom: 1.5rem; display: none; }
+    .detail-panel.show { display: block; }
+    .dp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .dp-title { font-size: 16px; font-weight: 500; }
+    .close-btn { background: none; border: none; cursor: pointer; font-size: 16px; color: var(--color-text-secondary); }
+    .dp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .dp-item { }
+    .dp-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 2px; }
+    .dp-val { font-size: 14px; color: var(--color-text-primary); font-weight: 500; }
+    .history-list { border-top: 0.5px solid var(--color-border-tertiary); padding-top: 14px; }
+    .history-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--color-border-tertiary); font-size: 13px; }
+    .history-item:last-child { border-bottom: none; }
+    .h-time { color: var(--color-text-secondary); min-width: 50px; font-size: 12px; }
+    .h-route { flex: 1; color: var(--color-text-primary); }
+    .h-fare { font-weight: 500; color: #3B6D11; }
+    .action-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; }
+    .filter-row { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+    .filter-label { font-size: 13px; color: var(--color-text-secondary); }
+    .filter-btn { padding: 4px 10px; font-size: 12px; border-radius: 20px; border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-primary); cursor: pointer; color: var(--color-text-secondary); font-family: var(--font-sans); }
+    .filter-btn.active { background: #EF9F27; border-color: #EF9F27; color: #412402; }
+    .revenue-section { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 16px; }
+    .rev-chart { display: flex; align-items: flex-end; gap: 6px; height: 100px; margin-top: 12px; }
+    .rev-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .rev-bar { width: 100%; background: #FAC775; border-radius: 3px 3px 0 0; transition: height 0.5s; }
+    .rev-label { font-size: 10px; color: var(--color-text-secondary); text-align: center; }
+    .page { display: none; }
+    .page.active { display: block; }
+    footer { margin-top: 2rem; padding: 1rem 0; text-align: center; font-size: 12px; color: var(--color-text-secondary); border-top: 0.5px solid var(--color-border-tertiary); }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">🚕</div>
+      <div>
+        <div class="logo-text">Taxi Mons</div>
+        <div class="logo-sub">Gestion de flotte — Mons, Belgique</div>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('flotte')">Flotte</button>
+      <button class="tab" onclick="switchTab('revenus')">Revenus</button>
+      <button class="tab" onclick="switchTab('chauffeurs')">Chauffeurs</button>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="metric-label">Actifs aujourd'hui</div><div class="metric-value green" id="m-actifs">7</div></div>
+    <div class="metric"><div class="metric-label">En course</div><div class="metric-value" id="m-encourse">4</div></div>
+    <div class="metric"><div class="metric-label">En maintenance</div><div class="metric-value amber" id="m-maint">2</div></div>
+    <div class="metric"><div class="metric-label">Revenus du jour (€)</div><div class="metric-value" id="m-rev">1 840</div></div>
+    <div class="metric"><div class="metric-label">Courses totales</div><div class="metric-value" id="m-courses">38</div></div>
+  </div>
+
+  <div id="page-flotte" class="page active">
+    <div class="filter-row">
+      <span class="filter-label">Filtrer :</span>
+      <button class="filter-btn active" onclick="filterFleet('tous', this)">Tous</button>
+      <button class="filter-btn" onclick="filterFleet('en-course', this)">En course</button>
+      <button class="filter-btn" onclick="filterFleet('disponible', this)">Disponibles</button>
+      <button class="filter-btn" onclick="filterFleet('maintenance', this)">Maintenance</button>
+      <button class="filter-btn" onclick="filterFleet('hors-service', this)">Hors service</button>
+    </div>
+
+    <div id="detail-panel" class="detail-panel">
+      <div class="dp-header">
+        <div class="dp-title" id="dp-title">Détail véhicule</div>
+        <button class="close-btn" onclick="closeDetail()">✕</button>
+      </div>
+      <div class="dp-grid" id="dp-content"></div>
+      <div class="history-list" id="dp-history"></div>
+    </div>
+
+    <div class="fleet-grid" id="fleet-grid"></div>
+  </div>
+
+  <div id="page-revenus" class="page">
+    <div class="revenue-section">
+      <div class="section-title">Revenus par véhicule — aujourd'hui (€)</div>
+      <div class="rev-chart" id="rev-chart"></div>
+    </div>
+    <div style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 10px;" id="rev-list"></div>
+  </div>
+
+  <div id="page-chauffeurs" class="page">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 10px;" id="drivers-grid"></div>
+  </div>
+</div>
+
+<footer>
+  Taxi Mons &copy; 2026 — Application de réservation de taxis à Mons, Belgique
+</footer>
+
+<script>
+const vehicles = [
+  { id:'TX-01', plate:'AB-123-CD', driver:'Marc Dupont', status:'en-course', km:142340, fuel:78, courses:5, revenue:210, route:'Mons Centre → Gare', lastUpdate:'09:42' },
+  { id:'TX-02', plate:'BC-456-DE', driver:'Sara Lemaire', status:'disponible', km:98210, fuel:92, courses:3, revenue:130, route:'Grand-Place', lastUpdate:'10:15' },
+  { id:'TX-03', plate:'CD-789-EF', driver:'Jean Moreau', status:'en-course', km:210540, fuel:55, courses:6, revenue:280, route:'Ghlin → Nimy', lastUpdate:'10:08' },
+  { id:'TX-04', plate:'DE-012-FG', driver:'Amina Bouzid', status:'maintenance', km:175000, fuel:30, courses:0, revenue:0, route:'—', lastUpdate:'08:00' },
+  { id:'TX-05', plate:'EF-345-GH', driver:'Luc Renard', status:'en-course', km:88700, fuel:64, courses:4, revenue:175, route:'Cuesmes → Jemappes', lastUpdate:'10:22' },
+  { id:'TX-06', plate:'FG-678-HI', driver:'Nora Petit', status:'disponible', km:132000, fuel:88, courses:2, revenue:85, route:'Hyon', lastUpdate:'09:55' },
+  { id:'TX-07', plate:'GH-901-IJ', driver:'Karim Ouali', status:'hors-service', km:305000, fuel:10, courses:0, revenue:0, route:'—', lastUpdate:'07:30' },
+  { id:'TX-08', plate:'HI-234-JK', driver:'Sophie Laurent', status:'en-course', km:54200, fuel:71, courses:5, revenue:245, route:'Saint-Denis → Obourg', lastUpdate:'10:19' },
+  { id:'TX-09', plate:'IJ-567-KL', driver:'Pierre Tran', status:'disponible', km:167800, fuel:95, courses:3, revenue:115, route:'Maisières', lastUpdate:'10:01' },
+  { id:'TX-10', plate:'JK-890-LM', driver:'Fatou Diallo', status:'maintenance', km:220100, fuel:20, courses:0, revenue:600, route:'—', lastUpdate:'08:15' },
+];
+
+const histories = {
+  'TX-01': [{t:'09:42',r:'Mons Centre → Gare',f:'18€'},{t:'08:55',r:'Nimy → Grand-Place',f:'12€'},{t:'08:10',r:'Ghlin → Jemappes',f:'15€'}],
+  'TX-02': [{t:'10:15',r:'Grand-Place → Hyon',f:'10€'},{t:'09:30',r:'Cuesmes → Mons Centre',f:'14€'}],
+  'TX-03': [{t:'10:08',r:'Ghlin → Nimy',f:'22€'},{t:'09:20',r:'Obourg → Saint-Denis',f:'18€'},{t:'08:40',r:'Mons → Jemappes',f:'13€'}],
+  'TX-05': [{t:'10:22',r:'Cuesmes → Jemappes',f:'16€'},{t:'09:45',r:'Hyon → Grand-Place',f:'11€'}],
+  'TX-06': [{t:'09:55',r:'Hyon → Mons Centre',f:'12€'}],
+  'TX-08': [{t:'10:19',r:'Saint-Denis → Obourg',f:'15€'},{t:'09:35',r:'Nimy → Ghlin',f:'13€'}],
+  'TX-09': [{t:'10:01',r:'Maisières → Cuesmes',f:'11€'},{t:'09:15',r:'Jemappes → Mons Centre',f:'14€'}],
+};
+
+let currentFilter = 'tous';
+let selectedCard = null;
+
+function statusLabel(s) {
+  return {
+    'en-course': 'En course',
+    'disponible': 'Disponible',
+    'maintenance': 'Maintenance',
+    'hors-service': 'Hors service'
+  }[s] || s;
+}
+
+function fuelColor(f) {
+  if (f >= 70) return '#639922';
+  if (f >= 40) return '#EF9F27';
+  return '#E24B4A';
+}
+
+function renderFleet() {
+  const grid = document.getElementById('fleet-grid');
+  const filtered = currentFilter === 'tous' ? vehicles : vehicles.filter(v => v.status === currentFilter);
+  grid.innerHTML = filtered.map(v => `
+    <div class="vehicle-card ${selectedCard === v.id ? 'selected' : ''}" onclick="selectVehicle('${v.id}')">
+      <div class="vc-header">
+        <div>
+          <div class="vc-id">${v.id}</div>
+          <div class="vc-plate">${v.plate}</div>
+        </div>
+        <span class="status-badge status-${v.status}">${statusLabel(v.status)}</span>
+      </div>
+      <div class="vc-driver">
+        <div class="avatar">${v.driver.split(' ').map(n=>n[0]).join('')}</div>
+        ${v.driver}
+      </div>
+      <div class="vc-stats">
+        <div class="vc-stat"><strong>${v.km.toLocaleString()} km</strong>Kilométrage</div>
+        <div class="vc-stat"><strong>${v.courses}</strong>Courses</div>
+        <div class="vc-stat"><strong>${v.revenue} €</strong>Revenus</div>
+      </div>
+      <div class="vc-bar"><div class="vc-bar-fill" style="width:${v.fuel}%;background:${fuelColor(v.fuel)}"></div></div>
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px;">Carburant : ${v.fuel}%</div>
+    </div>
+  `).join('');
+}
+
+function selectVehicle(id) {
+  if (selectedCard === id) { closeDetail(); return; }
+  selectedCard = id;
+  const v = vehicles.find(x => x.id === id);
+  const panel = document.getElementById('detail-panel');
+  document.getElementById('dp-title').textContent = `${v.id} — ${v.plate}`;
+  document.getElementById('dp-content').innerHTML = `
+    <div class="dp-item"><div class="dp-label">Chauffeur</div><div class="dp-val">${v.driver}</div></div>
+    <div class="dp-item"><div class="dp-label">Statut</div><div class="dp-val">${statusLabel(v.status)}</div></div>
+    <div class="dp-item"><div class="dp-label">Kilométrage</div><div class="dp-val">${v.km.toLocaleString()} km</div></div>
+    <div class="dp-item"><div class="dp-label">Carburant</div><div class="dp-val">${v.fuel}%</div></div>
+    <div class="dp-item"><div class="dp-label">Courses aujourd'hui</div><div class="dp-val">${v.courses}</div></div>
+    <div class="dp-item"><div class="dp-label">Revenus du jour</div><div class="dp-val">${v.revenue} €</div></div>
+    <div class="dp-item"><div class="dp-label">Position actuelle</div><div class="dp-val">${v.route}</div></div>
+    <div class="dp-item"><div class="dp-label">Dernière mise à jour</div><div class="dp-val">${v.lastUpdate}</div></div>
+  `;
+  const hist = histories[id] || [];
+  document.getElementById('dp-history').innerHTML = hist.length
+    ? '<div class="section-title" style="margin-bottom:8px;">Dernières courses</div>' + hist.map(h => `
+        <div class="history-item">
+          <div class="h-time">${h.t}</div>
+          <div class="h-route">${h.r}</div>
+          <div class="h-fare">${h.f}</div>
+        </div>`).join('')
+    : '<div style="font-size:13px;color:var(--color-text-secondary);padding-top:8px;">Aucune course enregistrée.</div>';
+  panel.classList.add('show');
+  renderFleet();
+}
+
+function closeDetail() {
+  selectedCard = null;
+  document.getElementById('detail-panel').classList.remove('show');
+  renderFleet();
+}
+
+function filterFleet(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  closeDetail();
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + tab).classList.add('active');
+  if (tab === 'revenus') renderRevenue();
+  if (tab === 'chauffeurs') renderDrivers();
+}
+
+function renderRevenue() {
+  const maxRev = Math.max(...vehicles.map(v => v.revenue));
+  document.getElementById('rev-chart').innerHTML = vehicles.map(v => `
+    <div class="rev-bar-wrap">
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:2px;">${v.revenue > 0 ? v.revenue+'€' : ''}</div>
+      <div class="rev-bar" style="height:${maxRev > 0 ? Math.round(v.revenue / maxRev * 80) : 0}px;background:${v.revenue > 0 ? '#EF9F27' : 'var(--color-background-secondary)'}"></div>
+      <div class="rev-label">${v.id}</div>
+    </div>
+  `).join('');
+  const total = vehicles.reduce((s,v) => s+v.revenue, 0);
+  document.getElementById('rev-list').innerHTML = vehicles.filter(v=>v.revenue>0).sort((a,b)=>b.revenue-a.revenue).map(v => `
+    <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-weight:500;font-size:14px;">${v.id} — ${v.driver}</div>
+        <div style="font-size:12px;color:var(--color-text-secondary);">${v.courses} courses</div>
+      </div>
+      <div style="font-size:16px;font-weight:500;color:#3B6D11;">${v.revenue} €</div>
+    </div>
+  `).join('') + `
+    <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;grid-column:1/-1;">
+      <div style="font-size:14px;font-weight:500;">Total journalier</div>
+      <div style="font-size:18px;font-weight:500;">${total} €</div>
+    </div>`;
+}
+
+function renderDrivers() {
+  document.getElementById('drivers-grid').innerHTML = vehicles.map(v => `
+    <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:16px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div class="avatar" style="width:40px;height:40px;font-size:14px;">${v.driver.split(' ').map(n=>n[0]).join('')}</div>
+        <div>
+          <div style="font-weight:500;font-size:14px;">${v.driver}</div>
+          <div style="font-size:12px;color:var(--color-text-secondary);">${v.id} · ${v.plate}</div>
+        </div>
+      </div>
+      <span class="status-badge status-${v.status}" style="margin-bottom:10px;display:inline-block;">${statusLabel(v.status)}</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+        <div><div style="font-size:11px;color:var(--color-text-secondary);">Courses</div><div style="font-weight:500;">${v.courses}</div></div>
+        <div><div style="font-size:11px;color:var(--color-text-secondary);">Revenus</div><div style="font-weight:500;">${v.revenue} €</div></div>
+        <div><div style="font-size:11px;color:var(--color-text-secondary);">Kilométrage</div><div style="font-weight:500;">${v.km.toLocaleString()} km</div></div>
+        <div><div style="font-size:11px;color:var(--color-text-secondary);">Carburant</div><div style="font-weight:500;">${v.fuel}%</div></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+renderFleet();
+</script>
+</body>
+</html>
