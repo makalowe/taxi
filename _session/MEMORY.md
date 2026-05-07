@@ -147,13 +147,27 @@ C:\Users\MIMBI\OneDrive\Bureau\taxi\
 cd C:\Users\MIMBI\OneDrive\Bureau\taxi\deploy\dashboard
 npx vercel --prod
 
-# Backend
+# Backend (port 3003)
 cd C:\Users\MIMBI\OneDrive\Bureau\taxi\backend
 npm start
 
+# Vérifier que le backend répond
+curl http://localhost:3003/api/health
+
 # Git
 cd C:\Users\MIMBI\OneDrive\Bureau\taxi
-git add .
+git add -A
 git commit -m "message"
 git push
 ```
+
+## 7. Récupérer les données (important)
+
+Le dashboard se connecte au backend via Socket.IO sur `http://localhost:3003`.
+Pour que les données s'affichent :
+
+1. **Lancer le backend** : `cd backend && npm start`
+2. **Ouvrir le dashboard** : `deploy/dashboard/index.html` (ou https://taxi-mons.vercel.app)
+3. Les **10 véhicules simulés** apparaissent avec leurs positions GPS autour de Mons
+4. La simulation déplace les véhicules toutes les 3 secondes
+5. Les KPIs (actifs, en course, revenus) se mettent à jour en temps réel
